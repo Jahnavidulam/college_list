@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CollegesList | Engineering Colleges Master Directory & Analytics Dashboard</title>
+    <!-- Modern Typography from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for High-Fidelity Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <!-- Glassmorphic Background Blur Orbs -->
+    <div class="blur-orb orb-1"></div>
+    <div class="blur-orb orb-2"></div>
+    <div class="blur-orb orb-3"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fa-solid fa-graduation-cap logo-icon"></i>
+                <span class="logo-text">Colleges<span class="accent-text">List</span></span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" id="btn-nav-dashboard">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard & Analytics
+                </a>
+                <a href="#" class="nav-item" id="btn-nav-directory">
+                    <i class="fa-solid fa-building-columns"></i> College Directory
+                </a>
+                <a href="india_engineering_colleges.csv" class="nav-item download-nav" download>
+                    <i class="fa-solid fa-file-csv"></i> Download Master CSV
+                </a>
+                <a href="india_engineering_colleges.xlsx" class="nav-item download-nav" download>
+                    <i class="fa-solid fa-file-excel"></i> Download Master Excel
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <p>Official Government Verified Data</p>
+                <div class="badge-row">
+                    <span class="gov-badge">AICTE</span>
+                    <span class="gov-badge">UGC</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="welcome-text">
+                    <h1 class="main-title">Engineering Colleges Master Directory</h1>
+                    <p class="subtitle">Complete, accurate, and structured insights from AICTE & UGC databases</p>
+                </div>
+                <div class="time-stamp-container">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="live-time">May 23, 2026</span>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <section class="content-section" id="section-dashboard">
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper blue-grad">
+                            <i class="fa-solid fa-university"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Engineering Colleges</span>
+                            <h3 class="stat-value" id="stat-total-colleges">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper purple-grad">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Unique Course Streams</span>
+                            <h3 class="stat-value" id="stat-total-branches">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper orange-grad">
+                            <i class="fa-solid fa-users-line"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Engineering Seats</span>
+                            <h3 class="stat-value" id="stat-total-seats">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper cyan-grad">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Tier-1 Elite Institutes</span>
+                            <h3 class="stat-value" id="stat-tier-1">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-row">
+                    <div class="chart-card glass-panel">
+                        <h4 class="chart-title">Colleges Distribution by State</h4>
+                        <div class="chart-container">
+                            <canvas id="chart-states"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card glass-panel">
+                        <h4 class="chart-title">Institution Classification</h4>
+                        <div class="chart-container">
+                            <canvas id="chart-classification"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Directory View -->
+            <section class="content-section" id="section-directory">
+                <!-- Advanced Filter Controls -->
+                <div class="filter-panel glass-panel">
+                    <div class="filter-row-header">
+                        <h3><i class="fa-solid fa-sliders"></i> Search and Multi-Dimensional Filters</h3>
+                        <button class="btn-secondary" id="btn-reset-filters">
+                            <i class="fa-solid fa-rotate-left"></i> Reset Filters
+                        </button>
+                    </div>
+                    
+                    <div class="filters-grid">
+                        <div class="filter-control search-control">
+                            <label for="search-global">Fuzzy Search</label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="search-global" placeholder="Search by college name, university, city...">
+                            </div>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-state">State / Union Territory</label>
+                            <select id="filter-state">
+                                <option value="">All States / UTs</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-district">District</label>
+                            <select id="filter-district" disabled>
+                                <option value="">Select State First</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-branch">Engineering Branch</label>
+                            <select id="filter-branch">
+                                <option value="">All Engineering Branches</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-tier">Tier Category</label>
+                            <select id="filter-tier">
+                                <option value="">All Tiers</option>
+                                <option value="Tier 1">Tier 1 (Elite / Premier)</option>
+                                <option value="Tier 2">Tier 2 (Reputable / Mid-tier)</option>
+                                <option value="Tier 3">Tier 3 (Local / Affiliated)</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-type">Institution Type</label>
+                            <select id="filter-type">
+                                <option value="">All Types</option>
+                                <option value="Government">Government / Public</option>
+                                <option value="Private">Private / Self-financed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Table Panel -->
+                <div class="data-panel glass-panel">
+                    <div class="data-header">
+                        <div class="results-info">
+                            Showing <span id="results-count" class="accent-text">0</span> matching engineering colleges
+                        </div>
+                        <div class="export-actions">
+                            <button class="btn-primary" id="btn-export-json">
+                                <i class="fa-solid fa-file-code"></i> Export Filtered JSON
+                            </button>
+                            <button class="btn-primary" id="btn-export-csv">
+                                <i class="fa-solid fa-file-csv"></i> Export Filtered CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main Grid -->
+                    <div class="table-container">
+                        <table class="college-table" id="college-data-table">
+                            <thead>
+                                <tr>
+                                    <th>College Name</th>
+                                    <th>Location</th>
+                                    <th>Classification</th>
+                                    <th>NIRF/NAAC</th>
+                                    <th>Intake Capacity</th>
+                                    <th>Branch Streams</th>
+                                    <th class="text-center">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Populated dynamically by app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="pagination-container">
+                        <div class="page-size-selector">
+                            <label for="select-page-size">Records per page:</label>
+                            <select id="select-page-size">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        <div class="pagination-controls-row">
+                            <button class="btn-page" id="btn-page-prev" disabled><i class="fa-solid fa-chevron-left"></i> Prev</button>
+                            <span class="page-status" id="page-status-text">Page 1 of 1</span>
+                            <button class="btn-page" id="btn-page-next" disabled>Next <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- College Profile Details Modal -->
+    <div class="modal-backdrop" id="college-details-modal">
+        <div class="modal-content glass-panel">
+            <button class="modal-close" id="btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div class="modal-header-section">
+                <span class="modal-badge" id="modal-tier-badge">Tier 1</span>
+                <h2 class="modal-college-name" id="modal-name">Indian Institute of Technology Madras</h2>
+                <p class="modal-sub-details"><i class="fa-solid fa-building-columns"></i> Affiliated to: <span id="modal-university">Autonomous</span></p>
+                <p class="modal-sub-details"><i class="fa-solid fa-location-dot"></i> <span id="modal-location">Chennai, Tamil Nadu</span></p>
+            </div>
+
+            <div class="modal-body-grid">
+                <!-- Left Column: Details -->
+                <div class="modal-info-col">
+                    <!-- General Details Block -->
+                    <div class="details-block">
+                        <h4 class="block-title"><i class="fa-solid fa-circle-info"></i> Institution Profile</h4>
+                        <div class="detail-row">
+                            <span class="detail-label">Establishment Year</span>
+                            <span class="detail-val" id="modal-est-year">1959</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Institution Type</span>
+                            <span class="detail-val" id="modal-type">Government</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">AICTE Institute ID</span>
+                            <span class="detail-val" id="modal-aicte-id">IIT-001</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">UGC University ID</span>
+                            <span class="detail-val" id="modal-ugc-id">U-0456</span>
+                        </div>
+                    </div>
+
+                    <!-- Accreditations Block -->
+                    <div class="details-block">
+                        <h4 class="block-title"><i class="fa-solid fa-shield-halved"></i> Accreditation & Approvals</h4>
+                        <div class="detail-row">
+                            <span class="detail-label">NIRF Rank</span>
+                            <span class="detail-val highlight-val" id="modal-nirf">1</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">NAAC Grade</span>
+                            <span class="detail-val highlight-val" id="modal-naac">A++</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">NBA Accreditation</span>
+                            <span class="detail-val" id="modal-nba">Yes</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">AICTE Approval Status</span>
+                            <span class="detail-val text-success" id="modal-aicte-status">Approved</span>
+                        </div>
+                    </div>
+
+                    <!-- Infrastructure Block -->
+                    <div class="details-block">
+                        <h4 class="block-title"><i class="fa-solid fa-school"></i> Campus & Amenities</h4>
+                        <div class="detail-row">
+                            <span class="detail-label">Campus Environment</span>
+                            <span class="detail-val" id="modal-campus">Urban</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Hostel Facilities</span>
+                            <span class="detail-val" id="modal-hostel">Yes</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Placement Cell</span>
+                            <span class="detail-val" id="modal-placement">Yes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Branches & Contact -->
+                <div class="modal-info-col">
+                    <!-- Contact Information Block -->
+                    <div class="details-block">
+                        <h4 class="block-title"><i class="fa-solid fa-address-book"></i> Contact Channels</h4>
+                        <a href="#" target="_blank" class="contact-link" id="modal-link-web">
+                            <i class="fa-solid fa-globe"></i> Visit Official Website
+                        </a>
+                        <div class="detail-row">
+                            <span class="detail-label">General Email</span>
+                            <a href="#" class="email-href" id="modal-link-email">info@iitm.ac.in</a>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Admissions Email</span>
+                            <a href="#" class="email-href" id="modal-link-admission">admissions@iitm.ac.in</a>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Placement Cell Email</span>
+                            <a href="#" class="email-href" id="modal-link-placement">placement@iitm.ac.in</a>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Phone Support</span>
+                            <span class="detail-val" id="modal-phone">+91-44-22578000</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Postal Address</span>
+                            <span class="detail-val text-wrap-address" id="modal-full-address">IIT P.O., Chennai - 600036</span>
+                        </div>
+                    </div>
+
+                    <!-- Branches / Courses Table Block -->
+                    <div class="details-block scrollable-block-details">
+                        <h4 class="block-title"><i class="fa-solid fa-list-check"></i> Branch Streams & Seat Intakes</h4>
+                        <div class="modal-table-wrapper">
+                            <table class="modal-branches-table">
+                                <thead>
+                                    <tr>
+                                        <th>Engineering Course / Stream</th>
+                                        <th>Degree</th>
+                                        <th class="text-right">Seats</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modal-branches-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-total-intake-row">
+                            Total Approved Seats: <span class="accent-text" id="modal-total-intake">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
