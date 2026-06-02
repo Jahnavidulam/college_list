@@ -34,6 +34,9 @@
                 <a href="#" class="nav-item" id="btn-nav-directory">
                     <i class="fa-solid fa-building-columns"></i> College Directory
                 </a>
+                <a href="#" class="nav-item" id="btn-nav-ambassadors">
+                    <i class="fa-solid fa-users-gear"></i> Manage Ambassadors
+                </a>
                 <a href="india_engineering_colleges.csv" class="nav-item download-nav" download>
                     <i class="fa-solid fa-file-csv"></i> Download Master CSV
                 </a>
@@ -240,6 +243,91 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Student Ambassadors View -->
+            <section class="content-section" id="section-ambassadors">
+                <div class="ambassador-workspace">
+                    <!-- Left Column: Add Form -->
+                    <div class="ambassador-form-panel glass-panel">
+                        <h3 class="panel-subtitle"><i class="fa-solid fa-user-plus"></i> Add Student Ambassador</h3>
+                        <form id="form-add-ambassador" novalidate>
+                            <div class="form-group">
+                                <label for="ambassador-name">Full Name</label>
+                                <input type="text" id="ambassador-name" placeholder="Enter full name" required>
+                                <span class="error-msg" id="error-ambassador-name"></span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="ambassador-email">Email Address</label>
+                                <input type="email" id="ambassador-email" placeholder="Enter email address" required>
+                                <span class="error-msg" id="error-ambassador-email"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ambassador-dept">Department / Stream</label>
+                                <input type="text" id="ambassador-dept" placeholder="e.g., Computer Science, Mechanical" required>
+                                <span class="error-msg" id="error-ambassador-dept"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ambassador-year">Year of Study</label>
+                                <select id="ambassador-year" required>
+                                    <option value="" disabled selected>Select study year</option>
+                                    <option value="1st Year">1st Year</option>
+                                    <option value="2nd Year">2nd Year</option>
+                                    <option value="3rd Year">3rd Year</option>
+                                    <option value="4th Year">4th Year</option>
+                                    <option value="Postgraduate">Postgraduate</option>
+                                </select>
+                                <span class="error-msg" id="error-ambassador-year"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ambassador-linkedin">LinkedIn Profile URL</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-brands fa-linkedin"></i>
+                                    <input type="url" id="ambassador-linkedin" placeholder="https://linkedin.com/in/username">
+                                </div>
+                                <span class="error-msg" id="error-ambassador-linkedin"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ambassador-social">Twitter / GitHub URL</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-link"></i>
+                                    <input type="url" id="ambassador-social" placeholder="https://github.com/username">
+                                </div>
+                                <span class="error-msg" id="error-ambassador-social"></span>
+                            </div>
+
+                            <button type="submit" class="btn-primary form-submit-btn">
+                                <i class="fa-solid fa-user-check"></i> Register Ambassador
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Right Column: List View -->
+                    <div class="ambassador-list-panel glass-panel">
+                        <div class="panel-header-row">
+                            <h3 class="panel-subtitle"><i class="fa-solid fa-users"></i> Registered Ambassadors</h3>
+                            <button class="btn-secondary btn-small" id="btn-export-ambassadors" title="Export current database state to JSON">
+                                <i class="fa-solid fa-file-export"></i> Export JSON
+                            </button>
+                        </div>
+                        
+                        <div class="ambassadors-grid-view" id="ambassadors-container">
+                            <!-- Populated dynamically by app.js -->
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div class="empty-state-container" id="ambassadors-empty-state">
+                            <i class="fa-solid fa-user-slash empty-icon"></i>
+                            <h4>No Ambassadors Registered Yet</h4>
+                            <p>Use the form on the left to register student ambassadors for this academic session.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -373,6 +461,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
 
     <!-- JS Application Script -->
     <script src="app.js"></script>
