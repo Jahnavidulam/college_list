@@ -7,6 +7,10 @@ let allColleges = [];
 let filteredColleges = [];
 let currentPage = 1;
 let pageSize = 25;
+const visitedCollegeIds = new Set();
+
+const VISITED_STORAGE_KEY = "visited_college_ids";
+const FILTERS_STORAGE_KEY = "college_directory_filters";
 
 // Charts instances
 let statesChart = null;
@@ -29,6 +33,7 @@ const filterDistrict = document.getElementById("filter-district");
 const filterBranch = document.getElementById("filter-branch");
 const filterTier = document.getElementById("filter-tier");
 const filterType = document.getElementById("filter-type");
+const filterVisited = document.getElementById("filter-visited");
 const btnResetFilters = document.getElementById("btn-reset-filters");
 
 const resultsCount = document.getElementById("results-count");
@@ -49,6 +54,8 @@ const btnExportCsv = document.getElementById("btn-export-csv");
    INITIALIZATION & DATA LOADING
    ========================================================================== */
 document.addEventListener("DOMContentLoaded", () => {
+    loadVisitedColleges();
+
     // Set Live Clock Year
     document.getElementById("live-time").innerText = new Date().toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
@@ -76,6 +83,9 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Populating filter drop-downs
             populateFilterOptions();
+
+            // Restore saved directory preferences
+            applySavedDirectoryPreferences();
             
             // Render dashboard charts and metrics
             updateDashboardMetrics();
@@ -166,6 +176,90 @@ function handleStateChange() {
     });
     
     filterDistrict.disabled = false;
+}
+
+function loadVisitedColleges() {
+    const localData = localStorage.getItem(VISITED_STORAGE_KEY);
+    if (!localData) return;
+
+    try {
+        const parsedIds = JSON.parse(localData);
+        if (!Array.isArray(parsedIds)) return;
+
+        visitedCollegeIds.clear();
+        parsedIds.forEach(id => {
+            if (id) visitedCollegeIds.add(id);
+        });
+    } catch (error) {
+        console.error("Error parsing visited colleges from localStorage:", error);
+    }
+}
+
+function saveVisitedColleges() {
+    localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify(Array.from(visitedCollegeIds)));
+}
+
+function isCollegeVisited(collegeId) {
+    return visitedCollegeIds.has(collegeId);
+}
+
+function toggleCollegeVisited(collegeId, isVisited) {
+    if (!collegeId) return;
+
+    if (isVisited) visitedCollegeIds.add(collegeId);
+    else visitedCollegeIds.delete(collegeId);
+
+    saveVisitedColleges();
+    renderTable();
+}
+
+function getCurrentDirectoryPreferences() {
+    return {
+        search: searchGlobal.value,
+        state: filterState.value,
+        district: filterDistrict.value,
+        branch: filterBranch.value,
+        tier: filterTier.value,
+        type: filterType.value,
+        visited: filterVisited.value,
+        pageSize: selectPageSize.value
+    };
+}
+
+function saveDirectoryPreferences() {
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(getCurrentDirectoryPreferences()));
+}
+
+function applySavedDirectoryPreferences() {
+    const localData = localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!localData) return;
+
+    try {
+        const saved = JSON.parse(localData);
+        if (!saved || typeof saved !== "object") return;
+
+        searchGlobal.value = saved.search || "";
+        filterState.value = saved.state || "";
+        handleStateChange();
+        filterDistrict.value = saved.district || "";
+        filterBranch.value = saved.branch || "";
+        filterTier.value = saved.tier || "";
+        filterType.value = saved.type || "";
+        filterVisited.value = saved.visited || "";
+
+        if (saved.pageSize && Array.from(selectPageSize.options).some(option => option.value === saved.pageSize)) {
+            selectPageSize.value = saved.pageSize;
+            pageSize = parseInt(saved.pageSize, 10);
+        }
+
+        filterData();
+    } catch (error) {
+        console.error("Error parsing saved directory preferences:", error);
+    }
+}
+
+function clearDirectoryPreferences() {
+    localStorage.removeItem(FILTERS_STORAGE_KEY);
 }
 
 /* ==========================================================================
@@ -300,6 +394,7 @@ function filterData() {
     const branchVal = filterBranch.value;
     const tierVal = filterTier.value;
     const typeVal = filterType.value;
+    const visitedVal = filterVisited.value;
     
     filteredColleges = allColleges.filter(col => {
         // Global Fuzzy Search
@@ -333,11 +428,16 @@ function filterData() {
             const hasBranch = col.branches.some(b => b.branch_name === branchVal);
             if (!hasBranch) return false;
         }
+
+        // Review Status Filter
+        if (visitedVal === "visited" && !isCollegeVisited(col.college_id)) return false;
+        if (visitedVal === "unvisited" && isCollegeVisited(col.college_id)) return false;
         
         return true;
     });
     
     currentPage = 1;
+    saveDirectoryPreferences();
     updateDashboardMetrics();
     initCharts();
     renderTable();
@@ -351,6 +451,8 @@ function resetFilters() {
     filterBranch.value = "";
     filterTier.value = "";
     filterType.value = "";
+    filterVisited.value = "";
+    clearDirectoryPreferences();
     
     filteredColleges = [...allColleges];
     currentPage = 1;
@@ -386,6 +488,8 @@ function renderTable() {
     
     paginatedItems.forEach(col => {
         const tr = document.createElement("tr");
+        const visited = isCollegeVisited(col.college_id);
+        tr.classList.toggle("visited-row", visited);
         
         // Classification Badges
         const tierClass = col.tier.toLowerCase().replace(" ", "-");
@@ -399,7 +503,13 @@ function renderTable() {
         tr.innerHTML = `
             <td>
                 <div class="college-cell">
-                    <span class="college-cell-name">${col.college_name}</span>
+                    <div class="college-name-row">
+                        <span class="college-cell-name">${col.college_name}</span>
+                        <label class="visited-toggle ${visited ? 'is-visited' : ''}" title="Mark college as visited">
+                            <input type="checkbox" class="visited-checkbox" data-college-id="${col.college_id}" ${visited ? 'checked' : ''}>
+                            <span class="visited-toggle-indicator">${visited ? '✓' : ''}</span>
+                        </label>
+                    </div>
                     <span class="college-cell-uni">${col.affiliated_university || 'Autonomous Institution'}</span>
                 </div>
             </td>
@@ -607,6 +717,7 @@ function setupEventListeners() {
     filterBranch.addEventListener("change", filterData);
     filterTier.addEventListener("change", filterData);
     filterType.addEventListener("change", filterData);
+    filterVisited.addEventListener("change", filterData);
     
     // Global Fuzzy Search Debounce
     let searchTimeout = null;
@@ -622,6 +733,7 @@ function setupEventListeners() {
     selectPageSize.addEventListener("change", () => {
         pageSize = parseInt(selectPageSize.value);
         currentPage = 1;
+        saveDirectoryPreferences();
         renderTable();
     });
     
@@ -649,4 +761,11 @@ function setupEventListeners() {
     // Data exports
     btnExportJson.addEventListener("click", exportFilteredJSON);
     btnExportCsv.addEventListener("click", exportFilteredCSV);
+
+    tableBody.addEventListener("change", (event) => {
+        const checkbox = event.target.closest(".visited-checkbox");
+        if (!checkbox) return;
+
+        toggleCollegeVisited(checkbox.dataset.collegeId, checkbox.checked);
+    });
 }

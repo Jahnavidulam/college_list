@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js for High-Fidelity Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="index.css?v=2">
 </head>
 <body>
     <!-- Glassmorphic Background Blur Orbs -->
@@ -180,6 +180,15 @@
                                 <option value="">All Types</option>
                                 <option value="Government">Government / Public</option>
                                 <option value="Private">Private / Self-financed</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-visited">Review Status</label>
+                            <select id="filter-visited">
+                                <option value="">All Colleges</option>
+                                <option value="visited">Visited Colleges</option>
+                                <option value="unvisited">Unvisited Colleges</option>
                             </select>
                         </div>
                     </div>
@@ -375,6 +384,6 @@
     </div>
 
     <!-- JS Application Script -->
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>

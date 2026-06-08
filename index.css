@@ -519,6 +519,53 @@ body {
     padding: 30px;
 }
 
+.visited-row {
+    background: linear-gradient(90deg, hsla(160, 100%, 45%, 0.12), hsla(210, 100%, 50%, 0.04));
+}
+
+.visited-row td {
+    border-color: hsla(160, 90%, 50%, 0.12);
+}
+
+.visited-toggle {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+    background: hsla(220, 100%, 100%, 0.04);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.visited-toggle:hover {
+    border-color: hsla(160, 90%, 50%, 0.45);
+    background: hsla(160, 90%, 50%, 0.1);
+}
+
+.visited-toggle.is-visited {
+    background: linear-gradient(135deg, hsla(160, 90%, 45%, 0.9), hsla(180, 100%, 42%, 0.8));
+    border-color: transparent;
+    box-shadow: 0 10px 20px hsla(160, 90%, 35%, 0.2);
+}
+
+.visited-checkbox {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.visited-toggle-indicator {
+    color: white;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+}
+
 .data-header {
     display: flex;
     justify-content: space-between;
@@ -579,11 +626,20 @@ body {
     flex-direction: column;
     gap: 4px;
 }
+
+.college-name-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .college-cell-name {
     font-family: var(--font-heading);
     font-size: 16px;
     font-weight: 700;
     color: var(--text-primary);
+    flex: 1;
 }
 .college-cell-uni {
     font-size: 12px;
