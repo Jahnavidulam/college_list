@@ -8,9 +8,12 @@ let filteredColleges = [];
 let currentPage = 1;
 let pageSize = 25;
 const visitedCollegeIds = new Set();
+let activeModalCollegeId = null;
+let redditPresenceByCollegeId = {};
 
 const VISITED_STORAGE_KEY = "visited_college_ids";
 const FILTERS_STORAGE_KEY = "college_directory_filters";
+const REDDIT_STORAGE_KEY = "college_reddit_presence";
 
 // Charts instances
 let statesChart = null;
@@ -34,6 +37,7 @@ const filterBranch = document.getElementById("filter-branch");
 const filterTier = document.getElementById("filter-tier");
 const filterType = document.getElementById("filter-type");
 const filterVisited = document.getElementById("filter-visited");
+const filterReddit = document.getElementById("filter-reddit");
 const btnResetFilters = document.getElementById("btn-reset-filters");
 
 const resultsCount = document.getElementById("results-count");
@@ -45,6 +49,15 @@ const pageStatusText = document.getElementById("page-status-text");
 
 const modal = document.getElementById("college-details-modal");
 const btnCloseModal = document.getElementById("btn-close-modal");
+const modalRedditStatus = document.getElementById("modal-reddit-status");
+const modalRedditActivity = document.getElementById("modal-reddit-activity");
+const modalRedditSubreddit = document.getElementById("modal-reddit-subreddit");
+const modalRedditMembers = document.getElementById("modal-reddit-members");
+const modalRedditLastActive = document.getElementById("modal-reddit-last-active");
+const modalRedditLink = document.getElementById("modal-reddit-link");
+const modalLinkRedditSearch = document.getElementById("modal-link-reddit-search");
+const modalLinkRedditDirect = document.getElementById("modal-link-reddit-direct");
+const btnSaveRedditPresence = document.getElementById("btn-save-reddit-presence");
 
 // Export Actions
 const btnExportJson = document.getElementById("btn-export-json");
@@ -55,6 +68,7 @@ const btnExportCsv = document.getElementById("btn-export-csv");
    ========================================================================== */
 document.addEventListener("DOMContentLoaded", () => {
     loadVisitedColleges();
+    loadRedditPresence();
 
     // Set Live Clock Year
     document.getElementById("live-time").innerText = new Date().toLocaleDateString('en-US', {
@@ -195,6 +209,115 @@ function loadVisitedColleges() {
     }
 }
 
+function loadRedditPresence() {
+    const localData = localStorage.getItem(REDDIT_STORAGE_KEY);
+    if (!localData) return;
+
+    try {
+        const parsed = JSON.parse(localData);
+        if (parsed && typeof parsed === "object") {
+            redditPresenceByCollegeId = parsed;
+        }
+    } catch (error) {
+        console.error("Error parsing Reddit presence from localStorage:", error);
+    }
+}
+
+function saveRedditPresence() {
+    localStorage.setItem(REDDIT_STORAGE_KEY, JSON.stringify(redditPresenceByCollegeId));
+}
+
+function getDefaultRedditPresence() {
+    return {
+        status: "unknown",
+        subredditName: "",
+        memberCount: "",
+        activityLevel: "",
+        lastActiveDate: "",
+        link: ""
+    };
+}
+
+function getCollegeRedditPresence(collegeId) {
+    return {
+        ...getDefaultRedditPresence(),
+        ...(redditPresenceByCollegeId[collegeId] || {})
+    };
+}
+
+function setCollegeRedditPresence(collegeId, presence) {
+    if (!collegeId) return;
+
+    redditPresenceByCollegeId[collegeId] = {
+        status: presence.status || "unknown",
+        subredditName: presence.subredditName || "",
+        memberCount: presence.memberCount || "",
+        activityLevel: presence.activityLevel || "",
+        lastActiveDate: presence.lastActiveDate || "",
+        link: presence.link || ""
+    };
+
+    saveRedditPresence();
+}
+
+function getRedditStatusMeta(status) {
+    if (status === "active") {
+        return { label: "Active Reddit Community", symbol: "🟢", className: "reddit-status-active" };
+    }
+
+    if (status === "discussions") {
+        return { label: "Reddit Discussions Found", symbol: "🟡", className: "reddit-status-discussions" };
+    }
+
+    if (status === "none") {
+        return { label: "No Reddit Presence Found", symbol: "🔴", className: "reddit-status-none" };
+    }
+
+    return { label: "Reddit Presence Not Reviewed", symbol: "⚪", className: "reddit-status-unknown" };
+}
+
+function getCollegeRedditSearchUrl(college) {
+    const query = [college.college_name, college.city || college.district, college.state, "reddit"]
+        .filter(Boolean)
+        .join(" ");
+
+    return `https://www.reddit.com/search/?q=${encodeURIComponent(query)}&sort=new`;
+}
+
+function getCollegeRedditUrl(college) {
+    const presence = getCollegeRedditPresence(college.college_id);
+    return presence.link || getCollegeRedditSearchUrl(college);
+}
+
+function formatRedditMemberCount(memberCount) {
+    if (!memberCount) return "Members not recorded";
+
+    const numericValue = Number(memberCount);
+    return Number.isFinite(numericValue) ? `${numericValue.toLocaleString()} members` : `${memberCount} members`;
+}
+
+function formatRedditActivity(presence) {
+    const fragments = [];
+    if (presence.activityLevel) fragments.push(`${presence.activityLevel} activity`);
+    if (presence.lastActiveDate) fragments.push(`Last active ${presence.lastActiveDate}`);
+    return fragments.length > 0 ? fragments.join(" • ") : "Activity not recorded";
+}
+
+function saveRedditPresenceFromModal() {
+    if (!activeModalCollegeId) return;
+
+    setCollegeRedditPresence(activeModalCollegeId, {
+        status: modalRedditStatus.value,
+        subredditName: modalRedditSubreddit.value.trim(),
+        memberCount: modalRedditMembers.value.trim(),
+        activityLevel: modalRedditActivity.value,
+        lastActiveDate: modalRedditLastActive.value,
+        link: modalRedditLink.value.trim()
+    });
+
+    filterData();
+}
+
 function saveVisitedColleges() {
     localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify(Array.from(visitedCollegeIds)));
 }
@@ -222,6 +345,7 @@ function getCurrentDirectoryPreferences() {
         tier: filterTier.value,
         type: filterType.value,
         visited: filterVisited.value,
+        reddit: filterReddit.value,
         pageSize: selectPageSize.value
     };
 }
@@ -246,6 +370,7 @@ function applySavedDirectoryPreferences() {
         filterTier.value = saved.tier || "";
         filterType.value = saved.type || "";
         filterVisited.value = saved.visited || "";
+        filterReddit.value = saved.reddit || "";
 
         if (saved.pageSize && Array.from(selectPageSize.options).some(option => option.value === saved.pageSize)) {
             selectPageSize.value = saved.pageSize;
@@ -395,6 +520,7 @@ function filterData() {
     const tierVal = filterTier.value;
     const typeVal = filterType.value;
     const visitedVal = filterVisited.value;
+    const redditVal = filterReddit.value;
     
     filteredColleges = allColleges.filter(col => {
         // Global Fuzzy Search
@@ -432,6 +558,12 @@ function filterData() {
         // Review Status Filter
         if (visitedVal === "visited" && !isCollegeVisited(col.college_id)) return false;
         if (visitedVal === "unvisited" && isCollegeVisited(col.college_id)) return false;
+
+        // Reddit Presence Filter
+        if (redditVal) {
+            const redditPresence = getCollegeRedditPresence(col.college_id);
+            if (redditPresence.status !== redditVal) return false;
+        }
         
         return true;
     });
@@ -452,6 +584,7 @@ function resetFilters() {
     filterTier.value = "";
     filterType.value = "";
     filterVisited.value = "";
+    filterReddit.value = "";
     clearDirectoryPreferences();
     
     filteredColleges = [...allColleges];
@@ -489,6 +622,8 @@ function renderTable() {
     paginatedItems.forEach(col => {
         const tr = document.createElement("tr");
         const visited = isCollegeVisited(col.college_id);
+        const redditPresence = getCollegeRedditPresence(col.college_id);
+        const redditMeta = getRedditStatusMeta(redditPresence.status);
         tr.classList.toggle("visited-row", visited);
         
         // Classification Badges
@@ -511,6 +646,10 @@ function renderTable() {
                         </label>
                     </div>
                     <span class="college-cell-uni">${col.affiliated_university || 'Autonomous Institution'}</span>
+                    <div class="reddit-presence-row">
+                        <span class="reddit-status-pill ${redditMeta.className}">${redditMeta.symbol} ${redditMeta.label}</span>
+                        <a href="${getCollegeRedditUrl(col)}" class="reddit-inline-link" target="_blank" rel="noreferrer">Open Reddit</a>
+                    </div>
                 </div>
             </td>
             <td>
@@ -555,6 +694,8 @@ function renderTable() {
 function openCollegeDetails(collegeId) {
     const col = allColleges.find(x => x.college_id === collegeId);
     if (!col) return;
+    const redditPresence = getCollegeRedditPresence(collegeId);
+    activeModalCollegeId = collegeId;
     
     // Basic Profile
     document.getElementById("modal-name").innerText = col.college_name;
@@ -598,6 +739,17 @@ function openCollegeDetails(collegeId) {
     const plcLink = document.getElementById("modal-link-placement");
     plcLink.href = `mailto:${col.placement_email}`;
     plcLink.innerText = col.placement_email;
+
+    modalRedditStatus.value = redditPresence.status;
+    modalRedditActivity.value = redditPresence.activityLevel;
+    modalRedditSubreddit.value = redditPresence.subredditName;
+    modalRedditMembers.value = redditPresence.memberCount;
+    modalRedditLastActive.value = redditPresence.lastActiveDate;
+    modalRedditLink.value = redditPresence.link;
+    modalLinkRedditSearch.href = getCollegeRedditSearchUrl(col);
+    modalLinkRedditDirect.href = getCollegeRedditUrl(col);
+    modalLinkRedditDirect.style.pointerEvents = redditPresence.link ? "auto" : "none";
+    modalLinkRedditDirect.style.opacity = redditPresence.link ? "1" : "0.5";
     
     document.getElementById("modal-phone").innerText = col.phone || "N/A";
     document.getElementById("modal-full-address").innerText = `${col.address}, Pincode: ${col.pincode}`;
@@ -629,6 +781,7 @@ function openCollegeDetails(collegeId) {
 window.openCollegeDetails = openCollegeDetails; // Make it globally accessible for onClick in rows
 
 function closeModal() {
+    activeModalCollegeId = null;
     modal.classList.remove("active");
 }
 
@@ -718,6 +871,7 @@ function setupEventListeners() {
     filterTier.addEventListener("change", filterData);
     filterType.addEventListener("change", filterData);
     filterVisited.addEventListener("change", filterData);
+    filterReddit.addEventListener("change", filterData);
     
     // Global Fuzzy Search Debounce
     let searchTimeout = null;
@@ -761,6 +915,7 @@ function setupEventListeners() {
     // Data exports
     btnExportJson.addEventListener("click", exportFilteredJSON);
     btnExportCsv.addEventListener("click", exportFilteredCSV);
+    btnSaveRedditPresence.addEventListener("click", saveRedditPresenceFromModal);
 
     tableBody.addEventListener("change", (event) => {
         const checkbox = event.target.closest(".visited-checkbox");

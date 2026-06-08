@@ -191,6 +191,16 @@
                                 <option value="unvisited">Unvisited Colleges</option>
                             </select>
                         </div>
+
+                        <div class="filter-control">
+                            <label for="filter-reddit">Reddit Presence</label>
+                            <select id="filter-reddit">
+                                <option value="">All Reddit Presence</option>
+                                <option value="active">Has Active Reddit Community</option>
+                                <option value="discussions">Has Reddit Discussions</option>
+                                <option value="none">No Reddit Presence</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -377,6 +387,57 @@
                         <div class="modal-total-intake-row">
                             Total Approved Seats: <span class="accent-text" id="modal-total-intake">0</span>
                         </div>
+                    </div>
+
+                    <div class="details-block">
+                        <h4 class="block-title"><i class="fa-brands fa-reddit-alien"></i> Reddit Presence Tracker</h4>
+                        <div class="reddit-form-grid">
+                            <div class="filter-control reddit-field">
+                                <label for="modal-reddit-status">Reddit Status</label>
+                                <select id="modal-reddit-status">
+                                    <option value="unknown">Not Reviewed Yet</option>
+                                    <option value="active">Active Reddit Community</option>
+                                    <option value="discussions">Reddit Discussions Found</option>
+                                    <option value="none">No Reddit Presence Found</option>
+                                </select>
+                            </div>
+                            <div class="filter-control reddit-field">
+                                <label for="modal-reddit-activity">Activity Level</label>
+                                <select id="modal-reddit-activity">
+                                    <option value="">Not Recorded</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+                            <div class="filter-control reddit-field">
+                                <label for="modal-reddit-subreddit">Subreddit Name</label>
+                                <input type="text" id="modal-reddit-subreddit" placeholder="e.g. r/iitmadras">
+                            </div>
+                            <div class="filter-control reddit-field">
+                                <label for="modal-reddit-members">Member Count</label>
+                                <input type="number" id="modal-reddit-members" min="0" placeholder="e.g. 12500">
+                            </div>
+                            <div class="filter-control reddit-field">
+                                <label for="modal-reddit-last-active">Last Active Date</label>
+                                <input type="date" id="modal-reddit-last-active">
+                            </div>
+                            <div class="filter-control reddit-field">
+                                <label for="modal-reddit-link">Direct Reddit Link</label>
+                                <input type="url" id="modal-reddit-link" placeholder="https://www.reddit.com/r/example/">
+                            </div>
+                        </div>
+                        <div class="reddit-action-row">
+                            <a href="#" target="_blank" rel="noreferrer" class="contact-link reddit-link" id="modal-link-reddit-search">
+                                <i class="fa-brands fa-reddit-alien"></i> Open Reddit Search
+                            </a>
+                            <a href="#" target="_blank" rel="noreferrer" class="contact-link reddit-link secondary-link" id="modal-link-reddit-direct">
+                                <i class="fa-solid fa-up-right-from-square"></i> Open Saved Reddit Link
+                            </a>
+                        </div>
+                        <button class="btn-primary reddit-save-btn" id="btn-save-reddit-presence">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Reddit Presence
+                        </button>
                     </div>
                 </div>
             </div>
