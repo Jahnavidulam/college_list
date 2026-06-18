@@ -15,6 +15,9 @@ const VISITED_STORAGE_KEY = "visited_college_ids";
 const FILTERS_STORAGE_KEY = "college_directory_filters";
 const REDDIT_STORAGE_KEY = "college_reddit_presence";
 
+// Student Ambassadors State
+let allAmbassadors = [];
+
 // Charts instances
 let statesChart = null;
 let classificationChart = null;
@@ -22,8 +25,10 @@ let classificationChart = null;
 // DOM Elements
 const sectionDashboard = document.getElementById("section-dashboard");
 const sectionDirectory = document.getElementById("section-directory");
+const sectionAmbassadors = document.getElementById("section-ambassadors");
 const btnNavDashboard = document.getElementById("btn-nav-dashboard");
 const btnNavDirectory = document.getElementById("btn-nav-directory");
+const btnNavAmbassadors = document.getElementById("btn-nav-ambassadors");
 
 const statTotalColleges = document.getElementById("stat-total-colleges");
 const statTotalBranches = document.getElementById("stat-total-branches");
@@ -84,6 +89,10 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         routeView("directory");
     });
+    btnNavAmbassadors.addEventListener("click", (e) => {
+        e.preventDefault();
+        routeView("ambassadors");
+    });
     
     // Load Database JSON
     fetch("colleges_db.json")
@@ -115,20 +124,28 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error loading colleges database:", err);
             tableBody.innerHTML = `<tr><td colspan="7" class="text-center" style="color: hsl(0,100%,60%);">Failed to load directory database: ${err.message}</td></tr>`;
         });
+
+    // Load Ambassadors state and setup validation form handlers
+    loadAmbassadors();
+    setupAmbassadorForm();
 });
 
 function routeView(view) {
-    if (view === "dashboard") {
-        btnNavDashboard.classList.add("active");
-        btnNavDirectory.classList.remove("active");
-        sectionDashboard.classList.add("active");
-        sectionDirectory.classList.remove("active");
-    } else {
-        btnNavDashboard.classList.remove("active");
-        btnNavDirectory.classList.add("active");
-        sectionDashboard.classList.remove("active");
-        sectionDirectory.classList.add("active");
-    }
+    const views = [
+        { name: "dashboard", btn: btnNavDashboard, section: sectionDashboard },
+        { name: "directory", btn: btnNavDirectory, section: sectionDirectory },
+        { name: "ambassadors", btn: btnNavAmbassadors, section: sectionAmbassadors }
+    ];
+    
+    views.forEach(v => {
+        if (v.name === view) {
+            v.btn.classList.add("active");
+            v.section.classList.add("active");
+        } else {
+            v.btn.classList.remove("active");
+            v.section.classList.remove("active");
+        }
+    });
 }
 
 /* ==========================================================================
@@ -923,4 +940,295 @@ function setupEventListeners() {
 
         toggleCollegeVisited(checkbox.dataset.collegeId, checkbox.checked);
     });
+}
+
+/* ==========================================================================
+   STUDENT AMBASSADORS FEATURE IMPLEMENTATION
+   ========================================================================== */
+
+// Floating Toast Notification System
+function showToast(message, type = 'success') {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+    
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    
+    let iconClass = 'fa-circle-check';
+    if (type === 'error') {
+        iconClass = 'fa-triangle-exclamation';
+    } else if (type === 'info') {
+        iconClass = 'fa-circle-info';
+    }
+    
+    toast.innerHTML = `
+        <i class="fa-solid ${iconClass} toast-icon"></i>
+        <span class="toast-message">${message}</span>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Automatically remove after animation completes (approx 4 seconds)
+    setTimeout(() => {
+        toast.remove();
+    }, 4000);
+}
+
+// Load Ambassadors from LocalStorage or Fallback File
+function loadAmbassadors() {
+    const localData = localStorage.getItem("colleges_ambassadors");
+    if (localData) {
+        try {
+            allAmbassadors = JSON.parse(localData);
+            renderAmbassadors();
+            return;
+        } catch (e) {
+            console.error("Error parsing ambassadors from localStorage:", e);
+        }
+    }
+    
+    // Fallback: Fetch from baseline file
+    fetch("ambassadors.json")
+        .then(response => {
+            if (!response.ok) throw new Error("Baseline JSON not found!");
+            return response.json();
+        })
+        .then(data => {
+            allAmbassadors = data || [];
+            localStorage.setItem("colleges_ambassadors", JSON.stringify(allAmbassadors));
+            renderAmbassadors();
+        })
+        .catch(err => {
+            console.error("Error loading baseline ambassadors.json:", err);
+            allAmbassadors = [];
+            renderAmbassadors();
+        });
+}
+
+// Render Ambassador Cards
+function renderAmbassadors() {
+    const container = document.getElementById("ambassadors-container");
+    const emptyState = document.getElementById("ambassadors-empty-state");
+    if (!container || !emptyState) return;
+    
+    container.innerHTML = "";
+    
+    if (!allAmbassadors || allAmbassadors.length === 0) {
+        emptyState.style.display = "flex";
+        return;
+    }
+    
+    emptyState.style.display = "none";
+    
+    allAmbassadors.forEach(amb => {
+        const card = document.createElement("div");
+        card.className = "ambassador-card";
+        
+        // Generate Initials for Avatar
+        const initials = amb.name
+            ? amb.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
+            : "SA";
+            
+        // Social Media Buttons
+        let linkedinBtn = "";
+        if (amb.linkedin) {
+            linkedinBtn = `<a href="${amb.linkedin}" target="_blank" class="social-btn linkedin" title="LinkedIn Profile"><i class="fa-brands fa-linkedin-in"></i></a>`;
+        }
+        
+        let socialBtn = "";
+        if (amb.social) {
+            socialBtn = `<a href="${amb.social}" target="_blank" class="social-btn" title="Social/Portfolio"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>`;
+        }
+        
+        card.innerHTML = `
+            <div class="ambassador-card-header">
+                <div class="ambassador-avatar">${initials}</div>
+                <div class="ambassador-meta">
+                    <h4 class="ambassador-name-text" title="${amb.name}">${amb.name}</h4>
+                    <span class="ambassador-role-badge">${amb.year}</span>
+                </div>
+                <button class="btn-delete-ambassador" onclick="deleteAmbassador('${amb.email}')" title="Remove Ambassador">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+            <div class="ambassador-details">
+                <div class="ambassador-detail-item">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>${amb.email}</span>
+                </div>
+                <div class="ambassador-detail-item">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>${amb.department}</span>
+                </div>
+            </div>
+            <div class="ambassador-social-links">
+                ${linkedinBtn}
+                ${socialBtn}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// Delete Ambassador
+function deleteAmbassador(email) {
+    if (confirm(`Are you sure you want to remove the ambassador associated with email: ${email}?`)) {
+        const initialCount = allAmbassadors.length;
+        allAmbassadors = allAmbassadors.filter(amb => amb.email !== email);
+        
+        if (allAmbassadors.length < initialCount) {
+            localStorage.setItem("colleges_ambassadors", JSON.stringify(allAmbassadors));
+            renderAmbassadors();
+            showToast("Ambassador removed successfully.", "success");
+        } else {
+            showToast("Failed to locate ambassador for removal.", "error");
+        }
+    }
+}
+
+// Expose to window for inline onclick handler
+window.deleteAmbassador = deleteAmbassador;
+
+// Export Current Ambassadors State as JSON
+function exportAmbassadorsJSON() {
+    if (!allAmbassadors || allAmbassadors.length === 0) {
+        showToast("No data to export.", "info");
+        return;
+    }
+    const jsonStr = JSON.stringify(allAmbassadors, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ambassadors.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Downloaded ambassadors.json successfully.", "success");
+}
+
+// Setup Form Handling & Validation
+function setupAmbassadorForm() {
+    const form = document.getElementById("form-add-ambassador");
+    if (!form) return;
+    
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        
+        // Reset Error Messages
+        const errorFields = ["name", "email", "dept", "year", "linkedin", "social"];
+        errorFields.forEach(field => {
+            document.getElementById(`error-ambassador-${field}`).innerText = "";
+        });
+        
+        // Fetch Input Values
+        const nameInput = document.getElementById("ambassador-name");
+        const emailInput = document.getElementById("ambassador-email");
+        const deptInput = document.getElementById("ambassador-dept");
+        const yearInput = document.getElementById("ambassador-year");
+        const linkedinInput = document.getElementById("ambassador-linkedin");
+        const socialInput = document.getElementById("ambassador-social");
+        
+        const nameVal = nameInput.value.trim();
+        const emailVal = emailInput.value.trim();
+        const deptVal = deptInput.value.trim();
+        const yearVal = yearInput.value;
+        const linkedinVal = linkedinInput.value.trim();
+        const socialVal = socialInput.value.trim();
+        
+        let isValid = true;
+        
+        // 1. Validate Name
+        if (!nameVal) {
+            document.getElementById("error-ambassador-name").innerText = "Full Name is required.";
+            isValid = false;
+        } else if (nameVal.length < 2) {
+            document.getElementById("error-ambassador-name").innerText = "Name must be at least 2 characters.";
+            isValid = false;
+        }
+        
+        // 2. Validate Email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailVal) {
+            document.getElementById("error-ambassador-email").innerText = "Email Address is required.";
+            isValid = false;
+        } else if (!emailRegex.test(emailVal)) {
+            document.getElementById("error-ambassador-email").innerText = "Please enter a valid email address.";
+            isValid = false;
+        } else {
+            // Check for uniqueness
+            const emailExists = allAmbassadors.some(amb => amb.email.toLowerCase() === emailVal.toLowerCase());
+            if (emailExists) {
+                document.getElementById("error-ambassador-email").innerText = "An ambassador with this email already exists.";
+                isValid = false;
+            }
+        }
+        
+        // 3. Validate Department
+        if (!deptVal) {
+            document.getElementById("error-ambassador-dept").innerText = "Department / Stream is required.";
+            isValid = false;
+        }
+        
+        // 4. Validate Year
+        if (!yearVal) {
+            document.getElementById("error-ambassador-year").innerText = "Year of Study is required.";
+            isValid = false;
+        }
+        
+        // Helper URL validation function
+        const isValidUrl = (str) => {
+            if (!str) return true; // optional
+            try {
+                const url = new URL(str);
+                return url.protocol === "http:" || url.protocol === "https:";
+            } catch (_) {
+                return false;
+            }
+        };
+        
+        // 5. Validate LinkedIn URL
+        if (linkedinVal && !isValidUrl(linkedinVal)) {
+            document.getElementById("error-ambassador-linkedin").innerText = "Please enter a valid URL (starting with http/https).";
+            isValid = false;
+        }
+        
+        // 6. Validate Social URL
+        if (socialVal && !isValidUrl(socialVal)) {
+            document.getElementById("error-ambassador-social").innerText = "Please enter a valid URL (starting with http/https).";
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            showToast("Please correct the errors in the form.", "error");
+            return;
+        }
+        
+        // Save to State
+        const newAmbassador = {
+            name: nameVal,
+            email: emailVal,
+            department: deptVal,
+            year: yearVal,
+            linkedin: linkedinVal || null,
+            social: socialVal || null
+        };
+        
+        allAmbassadors.push(newAmbassador);
+        localStorage.setItem("colleges_ambassadors", JSON.stringify(allAmbassadors));
+        
+        // Refresh List & Form
+        renderAmbassadors();
+        form.reset();
+        
+        showToast(`Registered ${nameVal} as a Student Ambassador!`, "success");
+    });
+    
+    // Bind Export Button Click
+    const exportBtn = document.getElementById("btn-export-ambassadors");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", exportAmbassadorsJSON);
+    }
 }
