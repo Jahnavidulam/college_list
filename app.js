@@ -299,10 +299,12 @@ function handleStateChange() {
 }
 
 function loadVisitedColleges() {
-    const localData = localStorage.getItem(VISITED_STORAGE_KEY);
-    if (!localData) return;
-
+    // localStorage can throw (sandboxed iframe, private browsing, blocked site data) —
+    // this feature is a convenience, so it degrades silently rather than halting the app.
     try {
+        const localData = localStorage.getItem(VISITED_STORAGE_KEY);
+        if (!localData) return;
+
         const parsedIds = JSON.parse(localData);
         if (!Array.isArray(parsedIds)) return;
 
@@ -311,26 +313,30 @@ function loadVisitedColleges() {
             if (id) visitedCollegeIds.add(id);
         });
     } catch (error) {
-        console.error("Error parsing visited colleges from localStorage:", error);
+        console.error("Error reading visited colleges from localStorage:", error);
     }
 }
 
 function loadRedditPresence() {
-    const localData = localStorage.getItem(REDDIT_STORAGE_KEY);
-    if (!localData) return;
-
     try {
+        const localData = localStorage.getItem(REDDIT_STORAGE_KEY);
+        if (!localData) return;
+
         const parsed = JSON.parse(localData);
         if (parsed && typeof parsed === "object") {
             redditPresenceByCollegeId = parsed;
         }
     } catch (error) {
-        console.error("Error parsing Reddit presence from localStorage:", error);
+        console.error("Error reading Reddit presence from localStorage:", error);
     }
 }
 
 function saveRedditPresence() {
-    localStorage.setItem(REDDIT_STORAGE_KEY, JSON.stringify(redditPresenceByCollegeId));
+    try {
+        localStorage.setItem(REDDIT_STORAGE_KEY, JSON.stringify(redditPresenceByCollegeId));
+    } catch (error) {
+        console.error("Error saving Reddit presence to localStorage:", error);
+    }
 }
 
 function getDefaultRedditPresence() {
@@ -425,7 +431,11 @@ function saveRedditPresenceFromModal() {
 }
 
 function saveVisitedColleges() {
-    localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify(Array.from(visitedCollegeIds)));
+    try {
+        localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify(Array.from(visitedCollegeIds)));
+    } catch (error) {
+        console.error("Error saving visited colleges to localStorage:", error);
+    }
 }
 
 function isCollegeVisited(collegeId) {
@@ -458,14 +468,18 @@ function getCurrentDirectoryPreferences() {
 }
 
 function saveDirectoryPreferences() {
-    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(getCurrentDirectoryPreferences()));
+    try {
+        localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(getCurrentDirectoryPreferences()));
+    } catch (error) {
+        console.error("Error saving directory preferences to localStorage:", error);
+    }
 }
 
 function applySavedDirectoryPreferences() {
-    const localData = localStorage.getItem(FILTERS_STORAGE_KEY);
-    if (!localData) return;
-
     try {
+        const localData = localStorage.getItem(FILTERS_STORAGE_KEY);
+        if (!localData) return;
+
         const saved = JSON.parse(localData);
         if (!saved || typeof saved !== "object") return;
 
@@ -492,7 +506,11 @@ function applySavedDirectoryPreferences() {
 }
 
 function clearDirectoryPreferences() {
-    localStorage.removeItem(FILTERS_STORAGE_KEY);
+    try {
+        localStorage.removeItem(FILTERS_STORAGE_KEY);
+    } catch (error) {
+        console.error("Error clearing directory preferences from localStorage:", error);
+    }
 }
 
 /* ==========================================================================
