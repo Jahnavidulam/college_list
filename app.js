@@ -38,7 +38,19 @@ const filterTier = document.getElementById("filter-tier");
 const filterType = document.getElementById("filter-type");
 const filterVisited = document.getElementById("filter-visited");
 const filterReddit = document.getElementById("filter-reddit");
+const filterTeam = document.getElementById("filter-team");
 const btnResetFilters = document.getElementById("btn-reset-filters");
+const teamSummaryGrid = document.getElementById("team-summary-grid");
+const validationGrid = document.getElementById("validation-grid");
+const modalTeamMember = document.getElementById("modal-team-member");
+
+// Team assignment (loaded from team_assignments.json; computed ONCE with a fixed
+// seed, never regenerated in the browser — filtering only ever reads it)
+let teamAssignment = null;
+const TEAM_HUES = {
+    "Arun": 210, "Pankaj": 265, "Hemanth": 320, "Tarun": 350,
+    "Venkatesh": 15, "Pritanshu": 40, "Jaydev": 90, "Krishna": 150, "Jahnavi": 185
+};
 
 const resultsCount = document.getElementById("results-count");
 const tableBody = document.getElementById("table-body");
@@ -85,35 +97,54 @@ document.addEventListener("DOMContentLoaded", () => {
         routeView("directory");
     });
     
-    // Load Database JSON
-    fetch("colleges_db.json")
-        .then(response => {
-            if (!response.ok) throw new Error("Database JSON not found!");
-            return response.json();
+    // Load Database JSON + Team Assignment JSON together
+    Promise.all([
+        fetch("colleges_db.json").then(r => {
+            if (!r.ok) throw new Error("Database JSON not found!");
+            return r.json();
+        }),
+        fetch("team_assignments.json").then(r => {
+            if (!r.ok) throw new Error("Team assignment JSON not found!");
+            return r.json();
         })
-        .then(data => {
+    ])
+        .then(([data, assignment]) => {
+            teamAssignment = assignment;
             allColleges = data;
+
+            // Merge the pre-computed, fixed-seed assignment onto each college record.
+            // The assignment itself is never generated or changed here — this only reads it.
+            allColleges.forEach(col => {
+                const member = assignment.assignments[col.college_id];
+                col.team_member = member || "Unassigned";
+                col.assignment_status = member ? "Assigned" : "Unassigned";
+            });
+
             filteredColleges = [...allColleges];
-            
+
             // Populating filter drop-downs
             populateFilterOptions();
 
             // Restore saved directory preferences
             applySavedDirectoryPreferences();
-            
+
             // Render dashboard charts and metrics
             updateDashboardMetrics();
             initCharts();
-            
+
             // Render college data table
             renderTable();
-            
+
+            // Render the team assignment summary + validation (static, computed once)
+            renderTeamSummary();
+            renderValidation();
+
             // Setup Event Listeners
             setupEventListeners();
         })
         .catch(err => {
             console.error("Error loading colleges database:", err);
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center" style="color: hsl(0,100%,60%);">Failed to load directory database: ${err.message}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="color: hsl(0,100%,60%);">Failed to load directory database: ${err.message}</td></tr>`;
         });
 });
 
@@ -162,6 +193,81 @@ function populateFilterOptions() {
         opt.textContent = branch;
         filterBranch.appendChild(opt);
     });
+}
+
+/* ==========================================================================
+   TEAM ASSIGNMENT: SUMMARY + VALIDATION (static — computed once from the
+   fixed-seed assignment, never recomputed by filtering)
+   ========================================================================== */
+function renderTeamSummary() {
+    if (!teamAssignment) return;
+    const rows = teamAssignment.team.map(member => {
+        return `
+            <div class="team-summary-row" data-member="${member}" style="--m-hue:${TEAM_HUES[member]}">
+                <span class="dot"></span>
+                <span class="name">${member}</span>
+                <span class="count">${teamAssignment.counts[member].toLocaleString()}</span>
+            </div>`;
+    }).join("");
+
+    const totalRow = `
+        <div class="team-summary-row total-row" data-member="">
+            <span class="dot"></span>
+            <span class="name">TOTAL</span>
+            <span class="count">${teamAssignment.totalAssigned.toLocaleString()}</span>
+        </div>`;
+
+    teamSummaryGrid.innerHTML = rows + totalRow;
+
+    teamSummaryGrid.querySelectorAll(".team-summary-row").forEach(row => {
+        row.classList.toggle("active", row.dataset.member === filterTeam.value);
+        row.addEventListener("click", () => {
+            filterTeam.value = row.dataset.member;
+            filterData();
+            document.getElementById("section-directory").scrollIntoView({ behavior: "smooth" });
+        });
+    });
+}
+
+function renderValidation() {
+    if (!teamAssignment) return;
+    const counts = teamAssignment.counts;
+    const team = teamAssignment.team;
+
+    // Every college record actually carries a team_member value (no blanks).
+    const blankCount = allColleges.filter(c => !c.team_member || !team.includes(c.team_member)).length;
+
+    // Duplicate-assignment check: every college_id maps to exactly one member.
+    const assignedIds = Object.keys(teamAssignment.assignments);
+    const uniqueAssignedIds = new Set(assignedIds);
+    const duplicateAssigned = assignedIds.length - uniqueAssignedIds.size;
+
+    const perMemberChecks = team.map(m => counts[m] === teamAssignment.perMember);
+    const perMemberOk = perMemberChecks.every(Boolean);
+    const totalAssignedOk = teamAssignment.totalAssigned === teamAssignment.perMember * team.length;
+    const noUnassignedOk = teamAssignment.totalUnassigned === 0 && blankCount === 0;
+    const noDuplicatesOk = duplicateAssigned === 0;
+    const totalCollegesOk = teamAssignment.totalColleges === allColleges.length;
+
+    const overallPass = perMemberOk && totalAssignedOk && noUnassignedOk && noDuplicatesOk && totalCollegesOk;
+
+    const checks = [
+        ["Total colleges", teamAssignment.totalColleges.toLocaleString(), totalCollegesOk],
+        ["Total assigned colleges", teamAssignment.totalAssigned.toLocaleString(), totalAssignedOk],
+        ...team.map((m, i) => [m, counts[m].toLocaleString(), perMemberChecks[i]]),
+        ["Unassigned colleges", teamAssignment.totalUnassigned.toLocaleString(), noUnassignedOk],
+        ["Duplicate assignments", duplicateAssigned.toLocaleString(), noDuplicatesOk],
+        [`Reconciliation: 9 × ${teamAssignment.perMember}`, `${team.length} × ${teamAssignment.perMember} = ${team.length * teamAssignment.perMember}`, totalAssignedOk],
+        ["Assignment validation", overallPass ? "PASS" : "FAIL", overallPass]
+    ];
+
+    validationGrid.innerHTML = checks.map(([label, val, pass]) => `
+        <div class="validation-check ${pass ? "" : "fail"}">
+            <span class="mark">${pass ? "✓" : "!"}</span>
+            <span class="label">${label}</span>
+            <span class="val">${val}</span>
+        </div>
+    `).join("");
 }
 
 function handleStateChange() {
@@ -346,6 +452,7 @@ function getCurrentDirectoryPreferences() {
         type: filterType.value,
         visited: filterVisited.value,
         reddit: filterReddit.value,
+        team: filterTeam.value,
         pageSize: selectPageSize.value
     };
 }
@@ -371,6 +478,7 @@ function applySavedDirectoryPreferences() {
         filterType.value = saved.type || "";
         filterVisited.value = saved.visited || "";
         filterReddit.value = saved.reddit || "";
+        filterTeam.value = saved.team || "";
 
         if (saved.pageSize && Array.from(selectPageSize.options).some(option => option.value === saved.pageSize)) {
             selectPageSize.value = saved.pageSize;
@@ -521,7 +629,8 @@ function filterData() {
     const typeVal = filterType.value;
     const visitedVal = filterVisited.value;
     const redditVal = filterReddit.value;
-    
+    const teamVal = filterTeam.value;
+
     filteredColleges = allColleges.filter(col => {
         // Global Fuzzy Search
         if (searchVal) {
@@ -564,7 +673,10 @@ function filterData() {
             const redditPresence = getCollegeRedditPresence(col.college_id);
             if (redditPresence.status !== redditVal) return false;
         }
-        
+
+        // Team Member Filter (reads the pre-computed assignment only — never reassigns)
+        if (teamVal && col.team_member !== teamVal) return false;
+
         return true;
     });
     
@@ -585,6 +697,7 @@ function resetFilters() {
     filterType.value = "";
     filterVisited.value = "";
     filterReddit.value = "";
+    filterTeam.value = "";
     clearDirectoryPreferences();
     
     filteredColleges = [...allColleges];
@@ -602,7 +715,7 @@ function renderTable() {
     tableBody.innerHTML = "";
     
     if (filteredColleges.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No engineering colleges matched your filter criteria.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No engineering colleges matched your filter criteria.</td></tr>';
         pageStatusText.innerText = "Page 0 of 0";
         btnPagePrev.disabled = true;
         btnPageNext.disabled = true;
@@ -634,7 +747,12 @@ function renderTable() {
         const naacText = col.naac_grade ? `<span class="accred-mini-badge">NAAC: ${col.naac_grade}</span>` : "";
         
         const streamsCount = col.branches ? col.branches.length : 0;
-        
+
+        const isAssigned = col.assignment_status === "Assigned";
+        const teamPill = isAssigned
+            ? `<span class="team-pill" style="--m-hue:${TEAM_HUES[col.team_member]}"><span class="dot"></span>${col.team_member}</span>`
+            : `<span class="team-pill unassigned"><span class="dot"></span>Unassigned</span>`;
+
         tr.innerHTML = `
             <td>
                 <div class="college-cell">
@@ -672,6 +790,7 @@ function renderTable() {
             </td>
             <td class="text-center" style="font-weight: 700;">${col.total_intake ? col.total_intake.toLocaleString() : 'N/A'}</td>
             <td class="text-center" style="font-weight: 500;">${streamsCount} Streams</td>
+            <td>${teamPill}</td>
             <td class="text-center">
                 <button class="btn-details" onclick="openCollegeDetails('${col.college_id}')" title="View College Details">
                     <i class="fa-solid fa-arrow-right"></i>
@@ -711,6 +830,9 @@ function openCollegeDetails(collegeId) {
     document.getElementById("modal-type").innerText = col.type || "Private";
     document.getElementById("modal-aicte-id").innerText = col.aicte_id || "N/A";
     document.getElementById("modal-ugc-id").innerText = col.ugc_id || "N/A";
+    modalTeamMember.innerText = col.assignment_status === "Assigned"
+        ? `${col.team_member} (Assigned)`
+        : "Unassigned";
     
     // Accreditations
     document.getElementById("modal-nirf").innerText = col.nirf_rank || "N/A";
@@ -808,7 +930,8 @@ function exportFilteredCSV() {
         "College ID", "College Name", "State", "District", "City",
         "College Type", "Affiliated University", "Tier", "NIRF Rank", "NAAC Grade",
         "Official Website", "Official Email", "Admission Email", "Placement Email", "Phone",
-        "Engineering Branch Name", "Degree Type", "Branch Intake Capacity", "Total Intake Capacity", "Establishment Year"
+        "Engineering Branch Name", "Degree Type", "Branch Intake Capacity", "Total Intake Capacity", "Establishment Year",
+        "Team Member", "Assignment Status"
     ];
     
     let csvRows = [headers.join(",")];
@@ -837,7 +960,9 @@ function exportFilteredCSV() {
                 `"${b.degree_type}"`,
                 b.branch_intake,
                 col.total_intake,
-                col.est_year
+                col.est_year,
+                `"${col.team_member}"`,
+                `"${col.assignment_status}"`
             ];
             
             csvRows.push(row.join(","));
@@ -872,6 +997,12 @@ function setupEventListeners() {
     filterType.addEventListener("change", filterData);
     filterVisited.addEventListener("change", filterData);
     filterReddit.addEventListener("change", filterData);
+    filterTeam.addEventListener("change", () => {
+        filterData();
+        teamSummaryGrid.querySelectorAll(".team-summary-row").forEach(row => {
+            row.classList.toggle("active", row.dataset.member === filterTeam.value);
+        });
+    });
     
     // Global Fuzzy Search Debounce
     let searchTimeout = null;

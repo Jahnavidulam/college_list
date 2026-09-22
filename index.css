@@ -1137,3 +1137,149 @@ body {
     padding-top: 8px;
     border-top: 1px solid var(--panel-border);
 }
+
+/* ==========================================================================
+   TEAM ASSIGNMENT FEATURE
+   ========================================================================== */
+.team-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid var(--panel-border);
+    background: hsla(var(--m-hue, 210), 90%, 55%, 0.14);
+    color: hsl(var(--m-hue, 210), 90%, 70%);
+    border-color: hsla(var(--m-hue, 210), 90%, 55%, 0.28);
+    white-space: nowrap;
+}
+.team-pill .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+}
+.team-pill.unassigned {
+    background: hsla(220, 100%, 100%, 0.05);
+    color: var(--text-muted);
+    border-color: var(--panel-border);
+}
+
+.team-panel {
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.team-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.team-panel-header h3 {
+    font-family: var(--font-heading);
+    color: var(--text-primary);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.team-panel-note {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.team-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+}
+.team-summary-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--border-radius-sm);
+    background: hsla(220, 100%, 100%, 0.03);
+    border: 1px solid var(--panel-border);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+.team-summary-row:hover, .team-summary-row.active {
+    border-color: hsl(var(--m-hue, 210), 90%, 55%);
+    background: hsla(var(--m-hue, 210), 90%, 55%, 0.08);
+}
+.team-summary-row .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: hsl(var(--m-hue, 210), 90%, 60%);
+    flex: none;
+}
+.team-summary-row .name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+.team-summary-row .count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+.team-summary-row.unassigned-row .dot {
+    background: var(--text-muted);
+}
+.team-summary-row.total-row {
+    border-style: dashed;
+    cursor: pointer;
+}
+.team-summary-row.total-row .dot {
+    background: var(--text-primary);
+}
+.team-summary-row.total-row .name,
+.team-summary-row.total-row .count {
+    color: var(--text-primary);
+    font-weight: 800;
+}
+
+.validation-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--panel-border);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+.validation-check {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: hsl(222, 24%, 12%);
+    font-size: 12.5px;
+}
+.validation-check .mark {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    background: hsla(145, 100%, 45%, 0.15);
+    color: hsl(145, 80%, 65%);
+}
+.validation-check.fail .mark {
+    background: hsla(0, 100%, 55%, 0.15);
+    color: hsl(0, 100%, 75%);
+}
+.validation-check .label { color: var(--text-secondary); }
+.validation-check .val { color: var(--text-muted); font-weight: 600; text-align: right; }

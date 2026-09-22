@@ -201,6 +201,43 @@
                                 <option value="none">No Reddit Presence</option>
                             </select>
                         </div>
+
+                        <div class="filter-control">
+                            <label for="filter-team">Team Member</label>
+                            <select id="filter-team">
+                                <option value="">All Colleges</option>
+                                <option value="Arun">Arun</option>
+                                <option value="Pankaj">Pankaj</option>
+                                <option value="Hemanth">Hemanth</option>
+                                <option value="Tarun">Tarun</option>
+                                <option value="Venkatesh">Venkatesh</option>
+                                <option value="Pritanshu">Pritanshu</option>
+                                <option value="Jaydev">Jaydev</option>
+                                <option value="Krishna">Krishna</option>
+                                <option value="Jahnavi">Jahnavi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Assignment Panel -->
+                <div class="team-panel glass-panel">
+                    <div class="team-panel-header">
+                        <h3><i class="fa-solid fa-people-group"></i> Team Assignment &mdash; 652 Colleges per Person</h3>
+                        <span class="team-panel-note">5,868 colleges &divide; 9 members = 652 each, zero unassigned. Random (fixed seed), computed once and only filtered here &mdash; it never reshuffles.</span>
+                    </div>
+                    <div class="team-summary-grid" id="team-summary-grid">
+                        <!-- Populated dynamically by app.js -->
+                    </div>
+                </div>
+
+                <!-- Assignment Validation Panel -->
+                <div class="team-panel glass-panel">
+                    <div class="team-panel-header">
+                        <h3><i class="fa-solid fa-clipboard-check"></i> Assignment Validation</h3>
+                    </div>
+                    <div class="validation-grid" id="validation-grid">
+                        <!-- Populated dynamically by app.js -->
                     </div>
                 </div>
 
@@ -231,6 +268,7 @@
                                     <th>NIRF/NAAC</th>
                                     <th>Intake Capacity</th>
                                     <th>Branch Streams</th>
+                                    <th>Team Member</th>
                                     <th class="text-center">Details</th>
                                 </tr>
                             </thead>
@@ -295,6 +333,10 @@
                         <div class="detail-row">
                             <span class="detail-label">UGC University ID</span>
                             <span class="detail-val" id="modal-ugc-id">U-0456</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Team Member Assigned</span>
+                            <span class="detail-val" id="modal-team-member">Unassigned</span>
                         </div>
                     </div>
 
