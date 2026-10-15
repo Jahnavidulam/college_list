@@ -1065,10 +1065,73 @@ function browserDownload(filename, blob) {
     URL.revokeObjectURL(url);
 }
 
+// The easyloops admin console shows this page in a sandbox without
+// allow-downloads and saves .csv/.xlsx/.json files for it instead (see
+// artifact-download.ts in the admin app). The page first asks whether the
+// viewer does this, which a viewer that doesn't never answers; once it has
+// said yes, a slow answer to a download is waited for, not taken as a no.
+const VIEWER_PROBE_MS = 1500;
+const VIEWER_SAVE_MS = 60000;
+// The console saves one file a second; a second file sooner is retried once.
+const VIEWER_RETRY_MS = 1100;
+
+function askViewer(message, replyType, timeoutMs) {
+    return new Promise(resolve => {
+        const id = `download-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const finish = (answer) => {
+            window.removeEventListener("message", onReply);
+            clearTimeout(timer);
+            resolve(answer);
+        };
+        const onReply = (event) => {
+            const data = event.data;
+            if (event.source !== window.parent || !data || data.type !== replyType || data.id !== id) return;
+            finish(data);
+        };
+        const timer = setTimeout(() => finish(null), timeoutMs);
+        window.addEventListener("message", onReply);
+        try {
+            window.parent.postMessage({ ...message, id }, "*");
+        } catch (error) {
+            finish(null);
+        }
+    });
+}
+
+// Only a yes is remembered: a viewer that was too busy to answer is asked again next time.
+let viewerSavesFiles = false;
+async function viewerSavesDownloads() {
+    if (!viewerSavesFiles) {
+        viewerSavesFiles = (await askViewer({ type: "artifact:download:probe" }, "artifact:download:ready", VIEWER_PROBE_MS)) !== null;
+    }
+    return viewerSavesFiles;
+}
+
+// Resolves { saved, reason } from the viewer; reason "no_answer" when it never confirmed.
+async function askViewerToSaveFile(filename, blob) {
+    for (let attempt = 0; ; attempt++) {
+        const ack = await askViewer({ type: "artifact:download", filename, data: blob }, "artifact:download:ack", VIEWER_SAVE_MS);
+        if (!ack) return { saved: false, reason: "no_answer" };
+        if (ack.saved === true) return { saved: true, reason: null };
+        const reason = typeof ack.reason === "string" ? ack.reason : "failed";
+        if (reason !== "rate_limited" || attempt > 0) return { saved: false, reason };
+        await new Promise(resolve => setTimeout(resolve, VIEWER_RETRY_MS));
+    }
+}
+
 async function saveFile(filename, blob) {
     const downloads = await getArtifactDownloads();
     if (!downloads) {
+        if (IN_EMBEDDED_VIEWER && await viewerSavesDownloads()) {
+            const answer = await askViewerToSaveFile(filename, blob);
+            if (!answer.saved) {
+                alertDownloadProblem({ code: answer.reason === "rate_limited" ? "viewer_busy" : answer.reason });
+            }
+            return;
+        }
         browserDownload(filename, blob);
+        // A fully sandboxed viewer that didn't answer drops the file silently.
+        if (IN_EMBEDDED_VIEWER && window.origin === "null") alertDownloadProblem({ code: "unavailable" });
         return;
     }
     try {
@@ -1081,9 +1144,19 @@ async function saveFile(filename, blob) {
 }
 
 function alertDownloadProblem(error) {
-    const msg = error && error.code === "rate_limited"
-        ? "A download prompt is already open. Please finish it and try again."
-        : "This download isn't available here.";
+    const code = error && error.code;
+    const messages = {
+        // claude.ai's download prompt
+        rate_limited: "A download prompt is already open. Please finish it and try again.",
+        // the easyloops console, which saves one file a second
+        viewer_busy: "Another download only just started. Please wait a moment and try again.",
+        no_answer: "The viewer didn't confirm this download. Please try again.",
+        too_large: "This file is too large to download here.",
+        rejected_extension: "This type of file can't be downloaded here.",
+        bad_filename: "This file name can't be used for a download here.",
+    };
+    // `code` can come from the viewer, so only this table's own entries count.
+    const msg = Object.prototype.hasOwnProperty.call(messages, code) ? messages[code] : "This download isn't available here.";
     console.warn(msg);
     const results = document.getElementById("results-count");
     if (results && results.parentElement) {
