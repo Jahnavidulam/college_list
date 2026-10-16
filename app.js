@@ -1407,42 +1407,45 @@ function exportFilteredCSV() {
         "Team Member", "Assignment Status"
     ];
     
-    let csvRows = [headers.join(",")];
+    // Every cell goes through csvCell, so a quote, comma or line break in any
+    // value stays inside its cell and a missing value is empty, never "undefined".
+    let csvRows = [headers.map(csvCell).join(",")];
     
     filteredColleges.forEach(col => {
         if (!col.branches || col.branches.length === 0) return;
         
         col.branches.forEach(b => {
             const row = [
-                `"${col.college_id}"`,
-                `"${col.college_name.replace(/"/g, '""')}"`,
-                `"${col.state}"`,
-                `"${col.district}"`,
-                `"${col.city}"`,
-                `"${col.type}"`,
-                `"${(col.affiliated_university || "Autonomous").replace(/"/g, '""')}"`,
-                `"${col.tier}"`,
-                `"${col.nirf_rank || ""}"`,
-                `"${col.naac_grade || ""}"`,
-                `"${col.website}"`,
-                `"${col.email}"`,
-                `"${col.admission_email}"`,
-                `"${col.placement_email}"`,
-                `"${col.phone}"`,
-                `"${b.branch_name}"`,
-                `"${b.degree_type}"`,
+                col.college_id,
+                col.college_name,
+                col.state,
+                col.district,
+                col.city,
+                col.type,
+                col.affiliated_university || "Autonomous",
+                col.tier,
+                col.nirf_rank || "",
+                col.naac_grade || "",
+                col.website,
+                col.email,
+                col.admission_email,
+                col.placement_email,
+                col.phone,
+                b.branch_name,
+                b.degree_type,
                 b.branch_intake,
                 col.total_intake,
                 col.est_year,
-                `"${col.team_member}"`,
-                `"${col.assignment_status}"`
+                col.team_member,
+                col.assignment_status
             ];
             
-            csvRows.push(row.join(","));
+            csvRows.push(row.map(csvCell).join(","));
         });
     });
     
-    const csvStr = csvRows.join("\n");
+    // UTF-8 BOM + CRLF, like the team CSV, so Excel reads non-ASCII names correctly.
+    const csvStr = String.fromCharCode(0xFEFF) + csvRows.join("\r\n") + "\r\n";
     const blob = new Blob([csvStr], { type: "text/csv;charset=utf-8;" });
     saveFile("edusphere_filtered_colleges.csv", blob);
 }
