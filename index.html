@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CollegesList | Engineering Colleges Master Directory & Analytics Dashboard</title>
@@ -9,12 +7,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome for Premium Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="fontawesome.min.css">
     <!-- Chart.js for High-Fidelity Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="index.css?v=3">
-</head>
-<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="index.css?v=7">
     <!-- Glassmorphic Background Blur Orbs -->
     <div class="blur-orb orb-1"></div>
     <div class="blur-orb orb-2"></div>
@@ -65,7 +61,7 @@
             </header>
 
             <!-- Dashboard View -->
-            <section class="content-section" id="section-dashboard">
+            <section class="content-section active" id="section-dashboard">
                 <!-- Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -201,6 +197,66 @@
                                 <option value="none">No Reddit Presence</option>
                             </select>
                         </div>
+
+
+                        <div class="filter-control">
+                            <label for="filter-priority">State Priority</label>
+                            <select id="filter-priority">
+                                <option value="">All Priorities</option>
+                                <option value="1">Priority 1 States</option>
+                                <option value="2">Priority 2 States</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-team">Team Member</label>
+                            <select id="filter-team">
+                                <option value="">All Colleges</option>
+                                <option value="Arun">Arun</option>
+                                <option value="Pankaj">Pankaj</option>
+                                <option value="Hemanth">Hemanth</option>
+                                <option value="Tarun">Tarun</option>
+                                <option value="Venkatesh">Venkatesh</option>
+                                <option value="Priyanshu">Priyanshu</option>
+                                <option value="Jaydev">Jaydev</option>
+                                <option value="Krishna">Krishna</option>
+                                <option value="Jahnavi">Jahnavi</option>
+                                <option value="Kiran">Kiran</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-control">
+                            <label for="filter-year">Year</label>
+                            <select id="filter-year">
+                                <option value="">All Years</option>
+                                <option value="1">Year 1</option>
+                                <option value="2">Year 2</option>
+                                <option value="3">Year 3</option>
+                                <option value="4">Year 4</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Assignment Panel -->
+                <div class="team-panel glass-panel">
+                    <div class="team-panel-header">
+                        <h3><i class="fa-solid fa-people-group"></i> Team Assignment &mdash; <span id="team-per-person">468&ndash;624</span> Colleges per Person</h3>
+                        <span class="team-panel-note"><span id="team-split-note">5,868 colleges across 10 members, 468&ndash;624 each</span>, zero unassigned. Assigned by state: Jahnavi has Andhra Pradesh, Tarun has Telangana, Priyanshu has Himachal Pradesh, Haryana, Chandigarh and Rajasthan. * = state split by district. Priority-1 colleges are listed first in the directory.</span>
+                        <span class="team-panel-note" id="priority-split-note"></span>
+                    </div>
+                    <div class="team-summary-grid" id="team-summary-grid">
+                        <!-- Populated dynamically by app.js -->
+                    </div>
+                </div>
+
+                <!-- Assignment Validation Panel -->
+                <div class="team-panel glass-panel">
+                    <div class="team-panel-header">
+                        <h3><i class="fa-solid fa-clipboard-check"></i> Assignment Validation</h3>
+                    </div>
+                    <div class="validation-grid" id="validation-grid">
+                        <!-- Populated dynamically by app.js -->
                     </div>
                 </div>
 
@@ -231,6 +287,7 @@
                                     <th>NIRF/NAAC</th>
                                     <th>Intake Capacity</th>
                                     <th>Branch Streams</th>
+                                    <th>Team Member</th>
                                     <th class="text-center">Details</th>
                                 </tr>
                             </thead>
@@ -295,6 +352,14 @@
                         <div class="detail-row">
                             <span class="detail-label">UGC University ID</span>
                             <span class="detail-val" id="modal-ugc-id">U-0456</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Team Member Assigned</span>
+                            <span class="detail-val" id="modal-team-member">Unassigned</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">State Priority</span>
+                            <span class="detail-val" id="modal-priority">Priority 1</span>
                         </div>
                     </div>
 
@@ -439,12 +504,13 @@
                             <i class="fa-solid fa-floppy-disk"></i> Save Reddit Presence
                         </button>
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
 
     <!-- JS Application Script -->
-    <script src="app.js?v=3"></script>
-</body>
-</html>
+    <script src="app.js?v=7"></script>
+
+</body></html>
